@@ -1,7 +1,8 @@
 import User from '../models/user.model.js'
 import bcryptjs from 'bcryptjs'
-import jwt from 'jsonwebtoken'
 import { errorhandler } from '../utils/errorHandler.js';
+import cloudinary from 'cloudinary'
+import fs from 'fs/promises'
 
 const cookieOptions={
     httpOnly:true,
@@ -39,6 +40,30 @@ export const register=async(req,res,next)=>{
 
         //todo
 
+        console.log(`req fille multer:-` , req.file)
+
+        if(req.file){
+            try {
+                const result = await cloudinary.v2.uploader.upload(req.file.path, {
+                    folder:'lms',
+                    hight:250,
+                    width:250,
+                    gravity:'faces',
+                    crop:'fill'
+                });
+
+                if(result){
+                    user.avatar.public_id=result.public_id
+                    user.avatar.secure_url=result.secure_url
+
+                    fs.rm(`uploads/${req.file.filename}`)
+                }
+            } catch (error) {
+                console.log("file upload error:-",error)
+                return next(errorhandler(500,"Error uploading file"))
+            }
+        }
+
         await user.save()
         user.password=undefined
 
@@ -51,7 +76,8 @@ export const register=async(req,res,next)=>{
 
         return res.status(201).json({
             success:true,
-            message:"User registered successfully"
+            message:"User registered successfully",
+            user
         })
 
     } catch (error) {
