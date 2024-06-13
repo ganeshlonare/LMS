@@ -4,6 +4,7 @@ import cors from 'cors'
 import { config } from 'dotenv'
 import UserRouter from './routes/user.route.js'
 import morgan from 'morgan'
+import errorMiddleware from './middlewares/errorMiddleware.js'
 config()
 
 const app=express()
@@ -25,11 +26,14 @@ app.get('/home',(req,res)=>{
 app.use("/api/v1/user",UserRouter)
 
 
+app.use(errorMiddleware)
+
 app.all('*',(req,res)=>{
     res.json({
         success:false,
         message:"Page not found"
     }).status(404)
 })
+
 
 export default app

@@ -1,11 +1,12 @@
 import {Schema , model} from 'mongoose'
+import jwt from 'jsonwebtoken'
 
 const userSchema=new Schema({
     fullName:{
         type:String,
         required:[true,"Name is required"],
         minLength:[2,"Name must be grater than 2 characters"],
-        minLength:[30,"Name must be less than 30 characters"],
+        maxLength:[30,"Name must be less than 30 characters"],
         lowercase:true,
         trim:true
     },
@@ -41,10 +42,26 @@ const userSchema=new Schema({
         default:'USER'
     },
     forgotPasswordToken:String,
-    forgotPasswordTokenExpiry:Date
+    forgotPasswordTokenExpiry:Date,
+    token:String
 },{
     timestamps:true
 })
+
+userSchema.methods={
+    generateJwtToken:async function(){
+        return await jwt.sign({
+            id:this._id,
+            email:this.email,
+            subscription:this.subscription,
+            role:this.role
+        }, 
+        process.env.JWT_SECRET_KEY , 
+        {
+            expiresIn:process.env.JWT_SECRET_KEY_EXPIRY
+        })
+    }
+}
 
 const User = model('User',userSchema)
 
