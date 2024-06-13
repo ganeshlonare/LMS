@@ -29,7 +29,7 @@ export const register=async(req,res,next)=>{
             password:await bcryptjs.hash(password,10),
             avatar:{
                 public_id:email,
-                secure_url:""
+                secure_url:"https://static.vecteezy.com/system/resources/previews/002/318/271/non_2x/user-profile-icon-free-vector.jpg"
             }
         })
 
