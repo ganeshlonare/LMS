@@ -1,30 +1,35 @@
 import express from 'express'
+import cookieParser from 'cookie-parser'
 import cors from 'cors'
-import cookieParser from 'cookie-parser';
-import { config } from 'dotenv';
+import { config } from 'dotenv'
+import UserRouter from './routes/user.route.js'
+import morgan from 'morgan'
 config()
 
-const app = express()
+const app=express()
 
 app.use(express.json())
-
 app.use(cors({
-    origin:[process.env.FE_URL],
-    credentials: true
-}));
-
+    origin:process.env.FE_UEL,
+    credentials:true
+}))
 app.use(cookieParser())
+app.use(morgan('dev'))
 
-app.use("/home",(req,res)=>{
-    res.send("Hello World")
+
+app.get('/home',(req,res)=>{
+    res.send('Welcome to Home Page')
 })
 
-//module route
+//routes
+app.use("/api/v1/user",UserRouter)
 
 
-//beyond all these routes
 app.all('*',(req,res)=>{
-    res.status(404).send("Page Not Found")
+    res.json({
+        success:false,
+        message:"Page not found"
+    }).status(404)
 })
 
 export default app
