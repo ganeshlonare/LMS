@@ -333,8 +333,43 @@ export const changePassword=async (req,res,next)=>{
 
 export const updateUser=async (req,res,next)=>{
     const {id} = req.user
+    const {fullName}=req.body
     try {
-        
+        const user =await User.findById(id)
+        if(!user){
+            return next(errorhandler(404,"User not found"))
+        }
+        if(fullName){
+            user.fullName=fullName
+        }
+        if(req.file){
+            try {
+                await cloudinary.v2.uploader.destroy(user.avatar.public_id)
+                const result = await cloudinary.v2.uploader.upload(req.file.path, {
+                    folder:'lms',
+                    hight:250,
+                    width:250,
+                    gravity:'faces',
+                    crop:'fill'
+                });
+
+                if(result){
+                    user.avatar.public_id=result.public_id
+                    user.avatar.secure_url=result.secure_url
+
+                    fs.rm(`uploads/${req.file.filename}`)
+                }
+            } catch (error) {
+                console.log("file upload error:-",error)
+                return next(errorhandler(500,error.message||"Error uploading file"))
+            }
+        }
+
+        await user.save()
+        return res.status(200).json({
+            success:true,
+            message:"User updated successfully"
+        })
     } catch (error) {
         console.log("error updating user")
         console.log(error.message)
