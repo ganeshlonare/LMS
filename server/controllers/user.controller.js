@@ -3,6 +3,8 @@ import bcryptjs from 'bcryptjs'
 import { errorhandler } from '../utils/errorHandler.js';
 import cloudinary from 'cloudinary'
 import fs from 'fs/promises'
+import sendEmail from '../utils/sendEmail.js';
+import crypto from "crypto"
 
 const cookieOptions={
     httpOnly:true,
@@ -60,7 +62,7 @@ export const register=async(req,res,next)=>{
                 }
             } catch (error) {
                 console.log("file upload error:-",error)
-                return next(errorhandler(500,"Error uploading file"))
+                return next(errorhandler(500,error.message||"Error uploading file"))
             }
         }
 
@@ -86,7 +88,7 @@ export const register=async(req,res,next)=>{
 
         return res.json({
             success:false,
-            message:"error registering user"
+            message:error.message || "Error in registering user"
         }).status(500)
     }
 }
@@ -134,7 +136,7 @@ export const login=async (req,res,next)=>{
         console.log(error)
         return res.json({
             success:false,
-            message:"error in logging in user"
+            message:error.message||"error in logging in user"
         }).status(500)
     }
 }
@@ -158,7 +160,7 @@ export const logout=(req,res)=>{
     } catch (error) {
         return res.json({
             success:false,
-            message:"error in log out"
+            message:error.message||"error in log out"
         }).status(500)
     }
 }
@@ -179,7 +181,163 @@ export const getProfile=async (req,res)=>{
     } catch (error) {
         return res.status(500).json({
             success:false,
-            message:"error in getting profile"
+            message:error.message||"error in getting profile"
         })
+    }
+}
+
+//forgot password
+
+export const forgotPassword=async (req,res,next)=>{
+    try {
+        const {email} = req.body
+        if(!email){
+            return next(errorhandler(404,"email is required"))
+        }
+        
+        const user= await User.findOne({email})
+
+        if(!user){
+            return next(errorhandler(404,"user not found"))
+        }
+
+        const resetToken=await user.generatePasswordResetToken()
+
+        user.save()
+
+        const resetPasswordUrl=`${process.env.FE_URL}/reset-password/${resetToken}`
+
+        const subject='Reset Password'
+        const message = `You can reset your password by clicking <a href=${resetPasswordUrl} target="_blank">Reset your password</a>
+        \nIf the above link does not work for some reason then copy paste this link in 
+         new tab ${resetPasswordUrl}.\n If you have not requested this, kindly ignore.`;
+
+        try {
+
+            await sendEmail(email,subject,message);
+
+            return res.status(200).json({
+                success:true,
+                message:`Email has been sent to your ${email} successfully`
+            })
+            
+        } catch (error) {
+
+            user.forgotPasswordToken=undefined;
+            user.forgotPasswordTokenExpiry=undefined;
+
+            await user.save()
+            console.log('error in sending email')
+            console.log(error)
+            return next(errorhandler(500,error.message))
+        }
+        
+    } catch (error) {
+        console.log("error in forgot password")
+        console.log(error)
+        return res.status(500).json({
+            success:false,
+            message:error.message||"failed to forgot password"
+        })
+    }
+}
+
+//reset password
+export const resetPassword=async (req,res,next)=>{
+
+    const {resetToken}=req.params
+    const {password}=req.body
+    try {
+
+        const forgotPasswordToken=crypto
+        .createHash('sha256')
+        .update(resetToken)
+        .digest('hex')
+
+        const user=await User.findOne({
+            forgotPasswordToken, 
+            forgotPasswordTokenExpiry:{$gt:Date.now()}
+        })
+
+        if(!user){
+            return next(errorhandler(404,"Token is invalid or expired"))
+        }
+
+        const hashedPassword=await bcryptjs.hash(password,10)
+
+        user.password=hashedPassword;
+        user.forgotPasswordToken=undefined;
+        user.forgotPasswordTokenExpiry=undefined;
+
+        user.save()
+
+        return res.status(200).json({
+            success:true,
+            message:"Password is changed successfully",
+        })
+        
+    } catch (error) {
+        console.log("error in reset password")
+        console.log(error)
+        return res.status(500).json({
+            success:false,
+            message:error.message ||"failed to reset password"
+        })
+    }
+}
+
+//change password
+
+export const changePassword=async (req,res,next)=>{
+    const {oldPassword , newPassword}=req.body
+    const {id}=req.user
+    console.log("password and new password",oldPassword , newPassword)
+    console.log(req.user)
+    try {
+        if(!oldPassword || !newPassword){
+            return next(errorhandler(401,"All the fields are required"))
+        }
+
+        const user=await User.findById(id).select('+password')
+
+        if(!user){
+            return next(errorhandler(404,"User not found"))
+        }
+
+        const isPasswordCorrect=await bcryptjs.compare(oldPassword,user.password)
+
+        if(!isPasswordCorrect){
+            return next(errorhandler(401,"Incorrect password"))
+        }
+
+        const hashedPassword=await bcryptjs.hash(newPassword,10)
+
+        user.password=hashedPassword
+        user.save()
+
+        return res.status(201).json({
+            success:true,
+            message:"Password is changed successfully"
+        })
+    } catch (error) {
+        console.log("failed to change password")
+        console.log(error.message)
+        return res.status(500).json({
+            success:false,
+            message:error.message ||"failed to change password"
+        })
+    }
+}
+
+//update User
+
+export const updateUser=async (req,res,next)=>{
+    const {id} = req.user
+    try {
+        
+    } catch (error) {
+        console.log("error updating user")
+        console.log(error.message)
+        return next(errorhandler(500,"error updating user"))
     }
 }
