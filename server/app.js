@@ -3,6 +3,7 @@ import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import { config } from 'dotenv'
 import UserRouter from './routes/user.route.js'
+import CourseRouter from './routes/course.route.js'
 import morgan from 'morgan'
 import errorMiddleware from './middlewares/errorMiddleware.js'
 config()
@@ -25,6 +26,7 @@ app.get('/home',(req,res)=>{
 
 //routes
 app.use("/api/v1/user",UserRouter)
+app.use("/api/v1/course",CourseRouter)
 
 
 app.use(errorMiddleware)
