@@ -23,3 +23,19 @@ export const isUserLoggedIn=async (req,res,next)=>{
         })
     }
 }
+
+export const isAuthorized=(...roles) =>(req,res,next)=>{
+    try {
+        const currentRole=req.user.role
+
+        if(!roles.includes(currentRole)){
+            return next(errorhandler(401,"You don't have the permission to this route"))
+        }
+
+        next()
+    } catch (error) {
+        console.log("Error in authorize")
+        console.log(error.message)
+        return next(errorhandler(500,error.message))
+    }
+}

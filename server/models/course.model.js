@@ -51,7 +51,11 @@ const courseSchema=new Schema({
     createdBy:{
         type:String,
         required:true
-    }
+    },
+    createdById:{
+        type:String,
+        required:true
+    },
 },{
     timestamps:true
 })
