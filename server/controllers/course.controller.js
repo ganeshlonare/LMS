@@ -2,6 +2,7 @@ import Course from "../models/course.model.js"
 import User from "../models/user.model.js"
 import { errorhandler } from "../utils/errorHandler.js"
 import cloudinary from 'cloudinary'
+import fs from 'fs/promises'
 
 //get all courses
 export const getAllCourses=async (req,res,next)=>{
@@ -39,7 +40,7 @@ export const getLecturesById=async (req,res,next)=>{
             course
         })
     } catch (error) {
-        console.log("error in getting courses by Id")
+        console.log("error in getting course by Id")
         console.log(error.message)
         return next(errorhandler(500,error.message))
     }
@@ -66,7 +67,7 @@ export const createCourse=async (req,res,next)=>{
             }
         })
         if(!course){
-            return next(errorhandler(400,"Failed to create course"))
+            return next(errorhandler(500,"Failed to create course"))
         }
 
         if(req.file){
@@ -78,9 +79,8 @@ export const createCourse=async (req,res,next)=>{
                 if(result){
                     course.thumbnail.public_id=result.public_id
                     course.thumbnail.secure_url=result.secure_url
-
-                    fs.rm(`uploads/${req.file.filename}`)
                 }
+                fs.rm(`uploads/${req.file.filename}`)
 
             } catch (error) {
                 console.log("file upload error:-",error)
@@ -123,6 +123,96 @@ export const deleteCourse=async(req,res,next)=>{
 
     } catch (error) {
         console.log("Error in deleting use")
+        console.log(error.message)
+        return next(errorhandler(500,error.message))
+    }
+}
+
+//update course
+
+export const updateCourse=async (req,res,next)=>{
+    try {
+    const {id}=req.params
+
+    const course= await Course.findByIdAndUpdate(id,
+        {$set:req.body},
+        {runValidators:true}
+    )
+
+    await course.save()
+
+    if(!course){
+        return next(errorhandler(400,"Course not found"))
+    }
+
+    return res.status(201).json({
+        success:true,
+        message:"Course updated successfully",
+        course
+    })
+    
+    } catch (error) {
+        console.log("Error in updating user")
+        console.log(error.message)
+        return next(errorhandler(500,error.message))
+    }
+}
+
+//Add lectures
+
+export const addLectures=async (req,res,next)=>{
+    try {
+        const {title , description}=req.body
+        const {id} =req.params
+
+        if(!title || !description){
+            return next(errorhandler(400,"All fields are required"))
+        }
+
+        const lecturesData={
+            title,
+            description,
+            lecture:{}
+        }
+
+        const course=await Course.findById(id)
+        if(!course){
+            return next(errorhandler(400,"Course not found"))
+        }
+
+        if(req.file){
+            try {
+                const result = await cloudinary.v2.uploader.upload(req.file.path, {
+                    folder:'lms',
+                    chunk_size:50000000,
+                    resource_type:'video'
+                });
+
+                if(!result){
+                    return next(errorhandler(500,"Failed to upload video"))
+                }
+
+                lecturesData.lecture.public_id=result.public_id
+                lecturesData.lecture.secure_url=result.secure_url
+                fs.rm(`uploads/${req.file.filename}`)
+
+            } catch (error) {
+                console.log("file upload error:-",error)
+                return next(errorhandler(500,error.message||"Error uploading file"))
+            }
+        }
+
+        course.lectures.push(lecturesData)
+        course.NumberOfLectures=course.lectures.length
+
+        return res.status(202).json({
+            success:true,
+            message:"Lecture added successfully",
+            course
+        })
+
+    } catch (error) {
+        console.log("Error in adding lectures")
         console.log(error.message)
         return next(errorhandler(500,error.message))
     }

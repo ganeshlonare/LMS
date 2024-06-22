@@ -39,3 +39,4 @@ export const isAuthorized=(...roles) =>(req,res,next)=>{
         return next(errorhandler(500,error.message))
     }
 }
+
