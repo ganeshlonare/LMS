@@ -139,8 +139,6 @@ export const updateCourse=async (req,res,next)=>{
         {runValidators:true}
     )
 
-    await course.save()
-
     if(!course){
         return next(errorhandler(400,"Course not found"))
     }
@@ -194,7 +192,7 @@ export const addLectures=async (req,res,next)=>{
 
                 lecturesData.lecture.public_id=result.public_id
                 lecturesData.lecture.secure_url=result.secure_url
-                fs.rm(`uploads/${req.file.filename}`)
+                fs.rm(`lms/${req.file.filename}`)
 
             } catch (error) {
                 console.log("file upload error:-",error)
@@ -204,6 +202,7 @@ export const addLectures=async (req,res,next)=>{
 
         course.lectures.push(lecturesData)
         course.NumberOfLectures=course.lectures.length
+        await course.save()
 
         return res.status(202).json({
             success:true,
