@@ -192,7 +192,7 @@ export const addLectures=async (req,res,next)=>{
 
                 lecturesData.lecture.public_id=result.public_id
                 lecturesData.lecture.secure_url=result.secure_url
-                fs.rm(`lms/${req.file.filename}`)
+                fs.rm(`uploads/${req.file.filename}`)
 
             } catch (error) {
                 console.log("file upload error:-",error)

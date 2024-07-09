@@ -48,6 +48,16 @@ const courseSchema=new Schema({
         type:Number,
         default:0
     },
+    activity:{
+        total_comments:{
+            type:Number,
+            default:0   
+        },
+        total_parent_comments: {
+            type: Number,
+            default: 0
+        },
+    },
     createdBy:{
         type:String,
         required:true

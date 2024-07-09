@@ -1,6 +1,7 @@
 import {Schema , model} from 'mongoose'
 import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
+import { type } from 'os'
 
 const userSchema=new Schema({
     fullName:{
@@ -44,7 +45,12 @@ const userSchema=new Schema({
     },
     forgotPasswordToken:String,
     forgotPasswordTokenExpiry:Date,
-    token:String
+    token:String,
+    courses:{
+        type :[Schema.Types.ObjectId],
+        ref :'course',
+        default:[]
+    }
 },{
     timestamps:true
 })
