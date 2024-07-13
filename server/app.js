@@ -5,6 +5,7 @@ import { config } from 'dotenv'
 import UserRouter from './routes/user.route.js'
 import CourseRouter from './routes/course.route.js'
 import ChatRouter from './routes/googleAi.route.js'
+import PaymentRouter from './routes/payment.route.js'
 import morgan from 'morgan'
 import errorMiddleware from './middlewares/errorMiddleware.js'
 config()
@@ -29,7 +30,7 @@ app.get('/home',(req,res)=>{
 app.use("/api/v1/user",UserRouter)
 app.use("/api/v1/course",CourseRouter)
 app.use("/api/v1/chat",ChatRouter)
-
+app.use("/api/v1/payment",PaymentRouter)
 
 app.use(errorMiddleware)
 
